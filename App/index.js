@@ -1,18 +1,43 @@
 // Filename: index.js
 // Combined code from all files
 
-import React from 'react';
-import { SafeAreaView, StyleSheet, Text, View, TextInput, Button, ScrollView } from 'react-native';
-import { useState } from 'react';
+import React, { useState } from 'react';
+import { SafeAreaView, StyleSheet, Text, View, TextInput, Button, ScrollView, ActivityIndicator } from 'react-native';
+import axios from 'axios';
 
 export default function App() {
     const [recipient, setRecipient] = useState('');
     const [occasion, setOccasion] = useState('');
     const [style, setStyle] = useState('');
     const [greeting, setGreeting] = useState('');
+    const [loading, setLoading] = useState(false);
 
-    const handleGenerateGreeting = () => {
-        setGreeting(`Dear ${recipient},\n\nWishing you a wonderful ${occasion}!\nHave a ${style} day!`);
+    const handleGenerateGreeting = async () => {
+        setLoading(true);
+
+        try {
+            const response = await axios.post('http://apihub.p.appply.xyz:3300/chatgpt', {
+                messages: [
+                    {
+                        role: 'system',
+                        content: 'You are a helpful assistant. Please provide answers for given requests.',
+                    },
+                    {
+                        role: 'user',
+                        content: `Create a personalized greeting for recipient: ${recipient}, on the occasion of: ${occasion}, with the style: ${style}.`,
+                    },
+                ],
+                model: 'gpt-4o',
+            });
+
+            const resultString = response.data.response;
+            setGreeting(resultString);
+        } catch (error) {
+            console.error('Error fetching greeting:', error);
+            setGreeting('Failed to generate greeting.');
+        } finally {
+            setLoading(false);
+        }
     };
 
     return (
@@ -45,7 +70,11 @@ export default function App() {
                         <Button title="Generate Greeting" color="#8A2BE2" onPress={handleGenerateGreeting} />
                     </View>
                     
-                    {greeting ? <Text style={styles.greeting}>{greeting}</Text> : null}
+                    {loading ? (
+                        <ActivityIndicator size="large" color="#8A2BE2" />
+                    ) : (
+                        greeting ? <Text style={styles.greeting}>{greeting}</Text> : null
+                    )}
                 </View>
             </ScrollView>
         </SafeAreaView>
